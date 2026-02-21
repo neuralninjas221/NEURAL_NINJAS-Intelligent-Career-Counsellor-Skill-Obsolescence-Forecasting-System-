@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillX</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Rajdhani:wght@400;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+/* ═══ THEME VARIABLES ═══ */
+:root{
+  --bg:#050d1a;
+  --bg2:#081424;
+  --card:rgba(10,25,47,0.88);
+  --card2:rgba(8,20,40,0.95);
+  --border:rgba(0,200,220,0.18);
+  --border2:rgba(0,200,220,0.1);
+  --teal:#00c8dc;
+  --teal-dim:rgba(0,200,220,0.15);
+  --text:#c8ddf0;
+  --text-dim:#6a8aaa;
+  --accent:#0d7a8a;
+  --danger:#e05555;
+  --danger-dim:rgba(224,85,85,0.12);
+  --success:#00c878;
+  --success-dim:rgba(0,200,120,0.12);
+  --nav-bg:rgba(10,30,55,0.7);
+  --input-bg:rgba(5,15,35,0.9);
+  --trans-card:rgba(5,18,40,0.7);
+  --shadow:rgba(0,0,0,0.45);
+}
+
+body.light{
+  --bg:#e8f0f8;
+  --bg2:#dde8f4;
+  --card:rgba(255,255,255,0.88);
+  --card2:rgba(245,250,255,0.97);
+  --border:rgba(0,150,180,0.22);
+  --border2:rgba(0,150,180,0.12);
+  --teal:#0088aa;
+  --teal-dim:rgba(0,136,170,0.1);
+  --text:#0a2540;
+  --text-dim:#4a6a8a;
+  --accent:#006680;
+  --nav-bg:rgba(220,235,250,0.85);
+  --input-bg:rgba(255,255,255,0.9);
+  --trans-card:rgba(230,242,255,0.8);
+  --shadow:rgba(0,80,150,0.15);
+}
+
+html,body{height:100%;font-family:'Exo 2',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;transition:background 0.35s,color 0.35s;}
+
+#stars-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;transition:opacity 0.35s;}
+body.light #stars-canvas{opacity:0.15;}
+.global-glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 20% 20%,rgba(0,180,220,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 80%,rgba(0,80,140,0.08) 0%,transparent 60%);}
+body.light .global-glow{background:radial-gradient(ellipse at 20% 20%,rgba(0,150,200,0.08) 0%,transparent 60%);}
+
+/* ═══ PAGE SYSTEM ═══ */
+.page{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s,transform 0.4s;}
+.page.hidden{opacity:0;pointer-events:none;transform:scale(1.04);}
+
+#dashboard-page,#learning-page{display:block;overflow-y:auto;height:100%;transition:opacity 0.4s,transform 0.4s;}
+#dashboard-page.hidden,#learning-page.hidden{opacity:0;pointer-events:none;transform:translateY(14px);}
+
+/* ═══ OVERLAY ═══ */
+.page-overlay{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;pointer-events:none;opacity:0;transition:opacity 0.3s;}
+.page-overlay.show{opacity:1;pointer-events:all;}
+.spinner{width:44px;height:44px;border:3px solid rgba(0,200,220,0.15);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.overlay-text{font-size:0.9rem;color:var(--text-dim);letter-spacing:1px;}
+
+/* ═══ AUTH ═══ */
+.auth-box{width:100%;max-width:460px;padding:20px;position:relative;z-index:2;}
+.auth-brand{text-align:center;margin-bottom:26px;}
+.auth-brand .logo-wrap{width:60px;height:60px;background:linear-gradient(135deg,#0d7a8a,#00c8dc);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 12px;box-shadow:0 0 35px rgba(0,200,220,0.28);}
+.auth-brand h1{font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;letter-spacing:3px;color:var(--text);}
+.auth-brand .sub{font-size:0.79rem;color:var(--teal);letter-spacing:1px;margin-top:3px;}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:20px;backdrop-filter:blur(24px);padding:32px 30px;box-shadow:0 24px 64px var(--shadow);}
+.auth-card h2{font-size:1.22rem;font-weight:600;color:var(--text);margin-bottom:4px;}
+.auth-card .auth-sub{font-size:0.81rem;color:var(--text-dim);margin-bottom:22px;}
+.form-group{margin-bottom:15px;}
+.form-group label{display:block;font-size:0.76rem;color:var(--text-dim);margin-bottom:6px;letter-spacing:0.5px;}
+.input-wrap{position:relative;}
+.input-wrap .inp-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:0.9rem;color:var(--text-dim);pointer-events:none;z-index:1;}
+
+/* ── Fix autofill background ── */
+.input-wrap input,.set-input{
+  width:100%;
+  background:var(--input-bg) !important;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px 14px 11px 38px;
+  color:var(--text);
+  font-family:'Exo 2',sans-serif;
+  font-size:0.9rem;
+  outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+  -webkit-text-fill-color: var(--text) !important;
+}
+/* Override browser autofill background */
+.input-wrap input:-webkit-autofill,
+.input-wrap input:-webkit-autofill:hover,
+.input-wrap input:-webkit-autofill:focus,
+.input-wrap input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(5,15,35,0.95) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--text);
+  transition: background-color 5000s ease-in-out 0s;
+}
+body.light .input-wrap input:-webkit-autofill,
+body.light .input-wrap input:-webkit-autofill:hover,
+body.light .input-wrap input:-webkit-autofill:focus,
+body.light .input-wrap input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(245,250,255,0.97) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+.input-wrap input:focus,.set-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,200,220,0.1);}
+.input-wrap input::placeholder,.set-input::placeholder{color:rgba(106,138,170,0.5);}
+.toggle-pass{position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-dim);font-size:0.88rem;transition:color 0.2s;user-select:none;}
+.toggle-pass:hover{color:var(--teal);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-footer{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.remember{display:flex;align-items:center;gap:7px;font-size:0.79rem;color:var(--text-dim);cursor:pointer;}
+.remember input{accent-color:var(--teal);}
+.forgot{font-size:0.79rem;color:var(--teal);text-decoration:none;transition:opacity 0.2s;}
+.forgot:hover{opacity:0.7;}
+.btn-auth{width:100%;background:linear-gradient(135deg,#0d7a8a,#00c8dc);border:none;border-radius:10px;color:#fff;font-family:'Exo 2',sans-serif;font-size:0.97rem;font-weight:700;padding:13px;cursor:pointer;letter-spacing:1px;transition:all 0.25s;position:relative;overflow:hidden;}
+.btn-auth:hover{filter:brightness(1.14);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,200,220,0.3);}
+.btn-auth:active{transform:translateY(0);}
+.btn-auth.loading::after,.btn-generate.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);animation:shimmer 0.9s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.btn-auth:disabled{opacity:0.7;cursor:not-allowed;transform:none;}
+.auth-error{margin-top:11px;padding:9px 13px;background:rgba(224,85,85,0.1);border:1px solid rgba(224,85,85,0.3);border-radius:8px;font-size:0.81rem;color:#f08080;display:none;}
+.auth-error.show{display:block;}
+.auth-success{margin-top:11px;padding:9px 13px;background:var(--success-dim);border:1px solid rgba(0,200,120,0.3);border-radius:8px;font-size:0.81rem;color:#60e090;display:none;}
+.auth-success.show{display:block;}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text-dim);font-size:0.77rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(0,200,220,0.15);}
+.demo-hint{text-align:center;font-size:0.77rem;color:var(--text-dim);padding:9px 14px;background:var(--teal-dim);border:1px dashed var(--border);border-radius:8px;}
+.demo-hint strong{color:var(--teal);}
+.switch-link{text-align:center;font-size:0.82rem;color:var(--text-dim);margin-top:18px;}
+.switch-link a{color:var(--teal);text-decoration:none;font-weight:600;cursor:pointer;transition:opacity 0.2s;}
+.switch-link a:hover{opacity:0.75;}
+.terms-note{font-size:0.73rem;color:var(--text-dim);text-align:center;margin-top:11px;line-height:1.6;}
+.terms-note a{color:var(--teal);text-decoration:none;}
+.strength-bar{height:4px;border-radius:4px;background:rgba(255,255,255,0.07);margin-top:7px;overflow:hidden;}
+.strength-fill{height:100%;border-radius:4px;transition:width 0.3s,background 0.3s;width:0%;}
+.strength-label{font-size:0.7rem;margin-top:3px;color:var(--text-dim);}
+
+/* ═══ DASHBOARD ═══ */
+.dash-wrapper{position:relative;z-index:2;padding:32px 40px;max-width:1400px;margin:0 auto;min-height:100%;}
+nav{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;}
+.brand h1{font-family:'Rajdhani',sans-serif;font-size:2.2rem;font-weight:700;letter-spacing:2px;color:var(--text);}
+.brand .team{font-size:0.83rem;color:var(--teal);letter-spacing:1px;margin-top:2px;}
+.brand .tagline{font-size:0.88rem;color:var(--text-dim);margin-top:10px;font-weight:300;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-links{display:flex;gap:6px;background:var(--nav-bg);border:1px solid var(--border);border-radius:30px;padding:8px 14px;backdrop-filter:blur(10px);}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:0.83rem;padding:6px 13px;border-radius:20px;transition:all 0.2s;cursor:pointer;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--teal-dim);}
+
+/* User Avatar + Menu */
+.user-avatar{position:relative;width:40px;height:40px;cursor:pointer;z-index:200;}
+.avatar-circle{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0d7a8a,#00c8dc);border:2px solid rgba(0,200,220,0.35);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;color:#fff;letter-spacing:1px;transition:border-color 0.2s,box-shadow 0.2s;user-select:none;}
+.avatar-circle:hover{border-color:var(--teal);box-shadow:0 0 14px rgba(0,200,220,0.25);}
+.user-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:210px;background:var(--card2);border:1px solid var(--border);border-radius:14px;backdrop-filter:blur(20px);padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all 0.2s;z-index:300;box-shadow:0 16px 48px var(--shadow);}
+.user-menu.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.menu-user-info{padding:10px 12px 12px;border-bottom:1px solid var(--border2);}
+.menu-username{font-weight:600;font-size:0.9rem;color:var(--text);}
+.menu-email{font-size:0.73rem;color:var(--text-dim);margin-top:2px;}
+.menu-items{padding-top:6px;}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:0.83rem;color:var(--text-dim);transition:all 0.15s;}
+.menu-item:hover{background:var(--teal-dim);color:var(--text);}
+.menu-item.logout{color:#f08080;}
+.menu-item.logout:hover{background:var(--danger-dim);}
+
+/* ═══ MAIN GRID ═══ */
+.main-grid{display:grid;grid-template-columns:1fr 380px;gap:24px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);padding:24px;}
+.skill-input-row{display:flex;gap:12px;margin-bottom:14px;}
+.search-wrap{flex:1;position:relative;}
+.search-wrap .icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-dim);}
+.search-wrap input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px 12px 38px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s;}
+.search-wrap input:focus{border-color:var(--teal);}
+.search-wrap input::placeholder{color:var(--text-dim);}
+.btn-add{background:linear-gradient(135deg,var(--accent),rgba(0,200,220,0.35));border:1px solid var(--teal);border-radius:10px;color:#fff;font-family:'Exo 2',sans-serif;font-size:0.88rem;font-weight:600;padding:12px 20px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-add:hover{filter:brightness(1.15);}
+.tags-row{display:flex;flex-wrap:wrap;gap:8px;min-height:36px;margin-bottom:20px;}
+.tag{background:var(--teal-dim);border:1px solid rgba(0,200,220,0.3);border-radius:6px;color:var(--teal);font-size:0.8rem;padding:5px 12px;display:flex;align-items:center;gap:6px;}
+.tag .remove{cursor:pointer;opacity:0.6;transition:opacity 0.2s;font-size:0.75rem;}
+.tag .remove:hover{opacity:1;}
+.btn-generate{display:block;width:65%;margin:0 auto;background:linear-gradient(135deg,#0d7a8a,#00c8dc);border:none;border-radius:10px;color:#fff;font-family:'Exo 2',sans-serif;font-size:1rem;font-weight:600;padding:14px;cursor:pointer;letter-spacing:1px;transition:all 0.25s;position:relative;overflow:hidden;}
+.btn-generate:hover{filter:brightness(1.15);transform:translateY(-1px);}
+#status-msg{text-align:center;font-size:0.83rem;color:var(--teal);min-height:20px;margin-top:10px;}
+.score-badge{display:none;align-items:center;justify-content:center;gap:16px;padding:12px 20px;background:var(--teal-dim);border:1px solid rgba(0,200,220,0.2);border-radius:10px;margin-top:14px;}
+.score-badge.visible{display:flex;}
+.score-num{font-size:2rem;font-weight:700;color:var(--teal);font-family:'Rajdhani',sans-serif;}
+.score-label{font-size:0.78rem;color:var(--text-dim);}
+.section-title{font-size:1.3rem;font-weight:600;color:var(--text);margin:24px 0 14px;}
+.transitions-card{background:var(--card);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);padding:22px;}
+.transitions-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.trans-card{background:var(--trans-card);border:1px solid rgba(0,180,210,0.2);border-radius:12px;padding:18px;transition:border-color 0.2s;}
+.trans-card:hover{border-color:rgba(0,200,220,0.5);}
+.trans-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.trans-icon{font-size:1.35rem;}
+.trans-title{font-size:1.02rem;font-weight:600;color:var(--teal);}
+.trans-sub{font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;}
+.skill-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.skill-tag{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:var(--text-dim);font-size:0.73rem;padding:3px 10px;}
+body.light .skill-tag{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);}
+.btn-path{background:var(--teal-dim);border:1px solid rgba(0,200,220,0.3);border-radius:8px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.83rem;padding:8px 20px;cursor:pointer;width:100%;transition:all 0.2s;}
+.btn-path:hover{background:rgba(0,200,220,0.2);color:var(--text);}
+.right-panel{display:flex;flex-direction:column;gap:16px;}
+.velocity-card{background:var(--card);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);padding:22px;flex:1;}
+.velocity-title{font-size:1.07rem;font-weight:600;color:var(--text);margin-bottom:16px;}
+.velocity-title span{color:var(--text-dim);font-weight:400;}
+.chart-wrap{position:relative;height:220px;margin-bottom:16px;}
+.chart-placeholder{height:100%;border:1px dashed rgba(0,200,220,0.2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-dim);font-size:0.83rem;}
+.chart-placeholder .icon-big{font-size:2rem;opacity:0.4;}
+.btn-analysis{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--trans-card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.88rem;padding:12px;cursor:pointer;transition:all 0.2s;}
+.btn-analysis:hover{border-color:var(--teal);color:var(--teal);}
+
+/* ═══ SETTINGS MODAL ═══ */
+.modal-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.modal-backdrop.open{opacity:1;pointer-events:all;}
+.settings-modal{background:var(--card2);border:1px solid var(--border);border-radius:22px;width:92%;max-width:600px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 32px 80px var(--shadow);transform:translateY(20px) scale(0.97);transition:transform 0.3s;}
+.modal-backdrop.open .settings-modal{transform:translateY(0) scale(1);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:22px 26px 18px;border-bottom:1px solid var(--border2);}
+.modal-header h2{font-size:1.1rem;font-weight:700;color:var(--text);font-family:'Rajdhani',sans-serif;letter-spacing:1px;}
+.modal-close{background:none;border:none;color:var(--text-dim);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.15s;}
+.modal-close:hover{color:var(--text);background:var(--teal-dim);}
+.modal-body{display:flex;flex:1;overflow:hidden;}
+.settings-tabs{width:160px;border-right:1px solid var(--border2);padding:12px 8px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.set-tab{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:0.83rem;color:var(--text-dim);transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'Exo 2',sans-serif;}
+.set-tab:hover{background:var(--teal-dim);color:var(--text);}
+.set-tab.active{background:var(--teal-dim);color:var(--teal);font-weight:600;}
+.set-tab.danger-tab{color:#f08080;}
+.set-tab.danger-tab:hover,.set-tab.danger-tab.active{background:var(--danger-dim);color:var(--danger);}
+.settings-panels{flex:1;overflow-y:auto;padding:22px 24px;}
+.set-panel{display:none;}
+.set-panel.active{display:block;}
+.set-panel h3{font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:6px;}
+.set-panel p{font-size:0.8rem;color:var(--text-dim);margin-bottom:18px;line-height:1.6;}
+.set-input{padding:11px 14px;border-radius:10px;margin-bottom:12px;display:block;width:100%;background:var(--input-bg) !important;border:1px solid var(--border);color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-text-fill-color:var(--text) !important;}
+.set-input:-webkit-autofill,.set-input:-webkit-autofill:hover,.set-input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px rgba(5,15,35,0.95) inset !important;-webkit-text-fill-color:var(--text) !important;transition:background-color 5000s ease-in-out 0s;}
+.set-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,200,220,0.1);}
+.set-btn{background:linear-gradient(135deg,#0d7a8a,#00c8dc);border:none;border-radius:9px;color:#fff;font-family:'Exo 2',sans-serif;font-size:0.87rem;font-weight:600;padding:10px 22px;cursor:pointer;transition:all 0.2s;}
+.set-btn:hover{filter:brightness(1.14);}
+.set-btn.danger-btn{background:linear-gradient(135deg,#a02020,#e05555);}
+.set-btn.danger-btn:hover{filter:brightness(1.1);}
+.set-msg{font-size:0.78rem;margin-top:8px;min-height:18px;}
+.set-msg.ok{color:var(--success);}
+.set-msg.err{color:var(--danger);}
+
+/* Theme toggle */
+.theme-toggle{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--teal-dim);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;}
+.theme-toggle span{font-size:0.88rem;color:var(--text);flex:1;}
+.toggle-switch{width:46px;height:26px;background:rgba(0,200,220,0.2);border:1px solid var(--border);border-radius:30px;cursor:pointer;position:relative;transition:background 0.25s;flex-shrink:0;}
+.toggle-switch.on{background:linear-gradient(135deg,#0d7a8a,#00c8dc);border-color:var(--teal);}
+.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.25s;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+.toggle-switch.on::after{transform:translateX(20px);}
+
+/* About panel */
+.about-logo{width:52px;height:52px;background:linear-gradient(135deg,#0d7a8a,#00c8dc);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:14px;box-shadow:0 0 24px rgba(0,200,220,0.2);}
+.about-version{display:inline-block;font-size:0.72rem;background:var(--teal-dim);border:1px solid var(--border);color:var(--teal);padding:3px 10px;border-radius:20px;margin-bottom:14px;}
+.about-divider{height:1px;background:var(--border2);margin:14px 0;}
+.about-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.about-list li{display:flex;align-items:center;gap:9px;font-size:0.8rem;color:var(--text-dim);}
+.about-list li span:first-child{color:var(--teal);font-size:0.95rem;}
+
+/* Delete confirm */
+.delete-warning{background:var(--danger-dim);border:1px solid rgba(224,85,85,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:0.8rem;color:#f08080;line-height:1.6;}
+.delete-warning strong{color:var(--danger);}
+
+/* ═══ HELP TOOLTIP ═══ */
+.help-tooltip{position:fixed;z-index:400;background:var(--card2);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(24px);box-shadow:0 16px 48px var(--shadow);width:280px;padding:18px;opacity:0;pointer-events:none;transform:translateY(-8px) scale(0.97);transition:all 0.22s;top:70px;right:60px;}
+.help-tooltip.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1);}
+.help-tooltip::before{content:'';position:absolute;top:-8px;right:28px;width:14px;height:8px;background:var(--border);clip-path:polygon(50% 0%,0% 100%,100% 100%);}
+.help-tooltip::after{content:'';position:absolute;top:-7px;right:29px;width:12px;height:7px;background:var(--card2);clip-path:polygon(50% 0%,0% 100%,100% 100%);}
+.help-title{font-size:0.9rem;font-weight:700;color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.help-close{margin-left:auto;cursor:pointer;color:var(--text-dim);font-size:0.8rem;transition:color 0.15s;}
+.help-close:hover{color:var(--text);}
+.help-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;font-size:0.76rem;color:var(--text-dim);line-height:1.5;}
+.help-item .hi{font-size:0.9rem;flex-shrink:0;margin-top:1px;}
+
+/* ═══ LEARNING PATH PAGE ═══ */
+.learn-wrapper{position:relative;z-index:2;padding:32px 40px;max-width:1400px;margin:0 auto;min-height:100%;}
+.learn-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;}
+.learn-brand h1{font-family:'Rajdhani',sans-serif;font-size:2.2rem;font-weight:700;letter-spacing:2px;color:var(--text);}
+.learn-brand .team{font-size:0.83rem;color:var(--teal);letter-spacing:1px;margin-top:2px;}
+.back-btn{display:flex;align-items:center;gap:8px;background:var(--nav-bg);border:1px solid var(--border);border-radius:22px;color:var(--text-dim);font-family:'Exo 2',sans-serif;font-size:0.83rem;padding:8px 18px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(10px);}
+.back-btn:hover{color:var(--text);border-color:var(--teal);}
+.learn-intro{font-size:0.88rem;color:var(--text-dim);margin-bottom:28px;font-weight:300;}
+
+/* ── Learning grid: masonry-style using columns so expanded cards don't stretch siblings ── */
+.learn-grid{
+  columns: 3;
+  column-gap: 22px;
+}
+@media(max-width:1100px){.learn-grid{columns:2;}}
+@media(max-width:700px){.learn-grid{columns:1;}}
+
+.roadmap-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  backdrop-filter:blur(16px);
+  padding:22px;
+  cursor:pointer;
+  transition:border-color 0.25s, box-shadow 0.25s;
+  break-inside: avoid;  /* key: prevent card from splitting across columns */
+  margin-bottom: 22px;
+  display: inline-block; /* required for break-inside to work properly */
+  width: 100%;
+}
+.roadmap-card:hover{border-color:var(--teal);box-shadow:0 12px 36px var(--shadow);}
+.roadmap-card.expanded{border-color:var(--teal);}
+
+.rm-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.rm-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(13,122,138,0.4),rgba(0,200,220,0.2));display:flex;align-items:center;justify-content:center;font-size:1.35rem;flex-shrink:0;}
+.rm-title{font-size:1.05rem;font-weight:700;color:var(--text);}
+.rm-sub{font-size:0.76rem;color:var(--text-dim);margin-top:2px;}
+.rm-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.rm-tag{background:var(--teal-dim);border:1px solid rgba(0,200,220,0.25);color:var(--teal);font-size:0.72rem;padding:3px 10px;border-radius:20px;}
+.rm-desc{font-size:0.78rem;color:var(--text-dim);line-height:1.6;margin-bottom:14px;}
+.rm-steps{display:none;margin-top:6px;}
+.roadmap-card.expanded .rm-steps{display:block;}
+.rm-step{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border2);position:relative;}
+.rm-step:last-child{border-bottom:none;}
+.step-num{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0d7a8a,#00c8dc);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;}
+.step-content{flex:1;}
+.step-title{font-size:0.83rem;font-weight:600;color:var(--text);margin-bottom:3px;}
+.step-desc{font-size:0.75rem;color:var(--text-dim);line-height:1.5;}
+.step-dur{font-size:0.68rem;color:var(--teal);margin-top:3px;}
+.rm-toggle{display:flex;align-items:center;justify-content:center;gap:6px;font-size:0.78rem;color:var(--teal);cursor:pointer;margin-top:10px;padding:7px;border-radius:8px;transition:background 0.15s;}
+.rm-toggle:hover{background:var(--teal-dim);}
+
+@media(max-width:900px){
+  .main-grid{grid-template-columns:1fr;}
+  .dash-wrapper,.learn-wrapper{padding:22px 16px;}
+  .form-row{grid-template-columns:1fr;}
+  .settings-tabs{width:130px;}
+  .modal-header h2{font-size:0.95rem;}
+  .help-tooltip{right:10px;width:260px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+<div class="global-glow"></div>
+
+<!-- Loading Overlay -->
+<div class="page-overlay" id="page-overlay">
+  <div class="spinner"></div>
+  <div class="overlay-text" id="overlay-text">Launching Dashboard...</div>
+</div>
+
+<!-- ═══════════ LOGIN PAGE ═══════════ -->
+<div class="page" id="login-page">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="logo-wrap">🚀</div>
+      <h1>SkillX</h1>
+      <div class="sub">By Team Neural Ninjas</div>
+    </div>
+    <div class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="auth-sub">Sign in to continue to your dashboard</p>
+      <div class="form-group">
+        <label>EMAIL ADDRESS</label>
+        <div class="input-wrap">
+          <span class="inp-icon">✉️</span>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>PASSWORD</label>
+        <div class="input-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password"/>
+          <span class="toggle-pass" id="toggle-lp">👁</span>
+        </div>
+      </div>
+      <div class="form-footer">
+        <label class="remember"><input type="checkbox" id="remember-me"/> Remember me</label>
+        <a href="#" class="forgot">Forgot password?</a>
+      </div>
+      <button class="btn-auth" id="btn-login" onclick="handleLogin()">Sign In →</button>
+      <div class="auth-error" id="login-error"></div>
+      <div class="divider">or</div>
+      <div class="demo-hint">Demo: <strong>user@guardian.com</strong> / <strong>guardian123</strong></div>
+    </div>
+    <div class="switch-link">Don't have an account? <a onclick="showPage('register-page')">Create Account</a></div>
+  </div>
+</div>
+
+<!-- ═══════════ REGISTER PAGE ═══════════ -->
+<div class="page hidden" id="register-page">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="logo-wrap">🚀</div>
+      <h1>SkillX</h1>
+      <div class="sub">By Team Neural Ninjas</div>
+    </div>
+    <div class="auth-card">
+      <h2>Create your account</h2>
+      <p class="auth-sub">Join thousands mapping their career future</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>FIRST NAME</label>
+          <div class="input-wrap">
+            <span class="inp-icon">👤</span>
+            <input type="text" id="reg-fname" placeholder="John" autocomplete="given-name"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>LAST NAME</label>
+          <div class="input-wrap">
+            <span class="inp-icon">👤</span>
+            <input type="text" id="reg-lname" placeholder="Doe" autocomplete="family-name"/>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>EMAIL ADDRESS</label>
+        <div class="input-wrap">
+          <span class="inp-icon">✉️</span>
+          <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>PASSWORD</label>
+        <div class="input-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" id="reg-pass" placeholder="Min. 6 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+          <span class="toggle-pass" id="toggle-rp">👁</span>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        <div class="strength-label" id="strength-label"></div>
+      </div>
+      <div class="form-group">
+        <label>CONFIRM PASSWORD</label>
+        <div class="input-wrap">
+          <span class="inp-icon">🔒</span>
+          <input type="password" id="reg-pass2" placeholder="Repeat your password" autocomplete="new-password"/>
+        </div>
+      </div>
+      <button class="btn-auth" id="btn-register" onclick="handleRegister()">Create Account →</button>
+      <div class="auth-error" id="reg-error"></div>
+      <div class="auth-success" id="reg-success"></div>
+      <div class="terms-note">By registering you agree to our <a href="#">Terms of Service</a> &amp; <a href="#">Privacy Policy</a></div>
+    </div>
+    <div class="switch-link">Already have an account? <a onclick="showPage('login-page')">Sign In</a></div>
+  </div>
+</div>
+
+<!-- ═══════════ DASHBOARD PAGE ═══════════ -->
+<div class="page hidden" id="dashboard-page">
+  <div class="dash-wrapper">
+    <nav>
+      <div class="brand">
+        <h1>CAREER GUARDIAN</h1>
+        <div class="team">By Team Neural Ninjas</div>
+        <div class="tagline">Predict the future of your skills and get ahead with smart transition paths.</div>
+      </div>
+      <div class="nav-right">
+        <div class="nav-links">
+          <a class="active" id="nav-dash">⚡ Dashboard</a>
+          <a id="nav-learn" onclick="showLearnPage()">📋 Learning Path</a>
+        </div>
+        <div class="user-avatar" id="user-avatar" onclick="toggleUserMenu()">
+          <div class="avatar-circle" id="avatar-circle">U</div>
+          <div class="user-menu" id="user-menu">
+            <div class="menu-user-info">
+              <div class="menu-username" id="menu-username">User</div>
+              <div class="menu-email" id="menu-email">user@example.com</div>
+            </div>
+            <div class="menu-items">
+              <div class="menu-item" onclick="openSettings('appearance')">⚙️ &nbsp;Settings</div>
+              <div class="menu-item" onclick="openSettings('username')">👤 &nbsp;Profile</div>
+              <div class="menu-item" id="help-btn" onclick="toggleHelp(event)">❓ &nbsp;Help</div>
+              <div class="menu-item logout" onclick="handleLogout()">⏻ &nbsp;Sign Out</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="main-grid">
+      <div>
+        <div class="card">
+          <div class="skill-input-row">
+            <div class="search-wrap">
+              <span class="icon">🔍</span>
+              <input type="text" id="skill-input" placeholder="Eg. Java, SQL, Manual Testing"/>
+            </div>
+            <button class="btn-add" onclick="addSkill()">Add Skill +</button>
+          </div>
+          <div class="tags-row" id="tags-row"></div>
+          <button class="btn-generate" id="gen-btn" onclick="generateScore()">Generate Score</button>
+          <div id="status-msg"></div>
+          <div class="score-badge" id="score-badge">
+            <div>
+              <div class="score-num" id="score-val">—</div>
+              <div class="score-label">Skill Relevance Score</div>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:0.77rem;color:var(--text-dim);margin-bottom:4px;">Future Readiness</div>
+              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;">
+                <div id="readiness-fill" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#0d7a8a,#00c8dc);width:0%;transition:width 1s ease;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section-title">Recommended Transitions</div>
+        <div class="transitions-card">
+          <div class="transitions-grid" id="transitions-grid">
+            <div class="trans-card">
+              <div class="trans-header"><span class="trans-icon">☁️</span><span class="trans-title">Cloud Architect</span></div>
+              <div class="trans-sub">For Java Developers</div>
+              <div class="skill-tags"><span class="skill-tag">DevOps</span><span class="skill-tag">AWS</span><span class="skill-tag">Docker</span></div>
+              <button class="btn-path">View Path</button>
+            </div>
+            <div class="trans-card">
+              <div class="trans-header"><span class="trans-icon">🧠</span><span class="trans-title">AI Specialist</span></div>
+              <div class="trans-sub">For SQL Enthusiasts</div>
+              <div class="skill-tags"><span class="skill-tag">Deep Learning</span><span class="skill-tag">NLP</span><span class="skill-tag">TensorFlow</span></div>
+              <button class="btn-path">View Path</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="right-panel">
+        <div class="velocity-card">
+          <div class="velocity-title">Velocity Gap <span>- Towards 2026</span></div>
+          <div class="chart-wrap">
+            <canvas id="velocity-chart" style="display:none;"></canvas>
+            <div class="chart-placeholder" id="chart-placeholder">
+              <div class="icon-big">📈</div>
+              <div>Generate a score to view your</div>
+              <div>Velocity Gap analysis</div>
+            </div>
+          </div>
+          <button class="btn-analysis" onclick="viewAnalysis()">View Full Analysis →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LEARNING PATH PAGE ═══════════ -->
+<div class="page hidden" id="learning-page">
+  <div class="learn-wrapper">
+    <div class="learn-header">
+      <div class="learn-brand">
+        <h1>CAREER GUARDIAN</h1>
+        <div class="team" style="font-size:0.83rem;color:var(--teal);letter-spacing:1px;margin-top:2px;">By Team Neural Ninjas</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="nav-links" style="background:var(--nav-bg);">
+          <a id="nav-dash2" onclick="showDashPage()">⚡ Dashboard</a>
+          <a class="active">📋 Learning Path</a>
+        </div>
+        <div class="user-avatar" id="user-avatar2" onclick="toggleUserMenu2()">
+          <div class="avatar-circle" id="avatar-circle2">U</div>
+          <div class="user-menu" id="user-menu2">
+            <div class="menu-user-info">
+              <div class="menu-username" id="menu-username2">User</div>
+              <div class="menu-email" id="menu-email2">user@example.com</div>
+            </div>
+            <div class="menu-items">
+              <div class="menu-item" onclick="openSettings('appearance')">⚙️ &nbsp;Settings</div>
+              <div class="menu-item" onclick="openSettings('username')">👤 &nbsp;Profile</div>
+              <div class="menu-item logout" onclick="handleLogout()">⏻ &nbsp;Sign Out</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="learn-intro">Explore curated skill roadmaps to guide your career transition. Click any path to expand step-by-step guidance.</div>
+    <div class="learn-grid" id="learn-grid">
+      <!-- Roadmap cards injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SETTINGS MODAL ═══════════ -->
+<div class="modal-backdrop" id="settings-modal" onclick="closeSettingsOutside(event)">
+  <div class="settings-modal">
+    <div class="modal-header">
+      <h2>⚙️ &nbsp;SETTINGS</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-tabs">
+        <button class="set-tab active" onclick="switchTab('appearance')" id="tab-appearance">🎨 Appearance</button>
+        <button class="set-tab" onclick="switchTab('username')" id="tab-username">👤 Username</button>
+        <button class="set-tab" onclick="switchTab('password')" id="tab-password">🔑 Password</button>
+        <button class="set-tab" onclick="switchTab('about')" id="tab-about">ℹ️ About</button>
+        <button class="set-tab danger-tab" onclick="switchTab('delete')" id="tab-delete">🗑 Delete</button>
+      </div>
+      <div class="settings-panels">
+
+        <!-- APPEARANCE -->
+        <div class="set-panel active" id="panel-appearance">
+          <h3>Appearance</h3>
+          <p>Switch between dark and light mode to suit your preference.</p>
+          <div class="theme-toggle">
+            <span id="theme-label">🌙 Dark Mode</span>
+            <div class="toggle-switch" id="theme-toggle-btn" onclick="toggleTheme()"></div>
+          </div>
+          <p style="font-size:0.76rem;color:var(--text-dim);line-height:1.6;">The dark mode provides a space-themed aesthetic optimized for low-light environments. Light mode offers a clean, minimal look for bright surroundings.</p>
+        </div>
+
+        <!-- USERNAME -->
+        <div class="set-panel" id="panel-username">
+          <h3>Change Display Name</h3>
+          <p>Update how your name appears across the dashboard.</p>
+          <input class="set-input" type="text" id="new-username" placeholder="Enter new display name"/>
+          <button class="set-btn" onclick="changeUsername()">Save Name</button>
+          <div class="set-msg" id="username-msg"></div>
+        </div>
+
+        <!-- PASSWORD -->
+        <div class="set-panel" id="panel-password">
+          <h3>Change Password</h3>
+          <p>Set a new password for your account. Minimum 6 characters.</p>
+          <input class="set-input" type="password" id="cur-pass" placeholder="Current password"/>
+          <input class="set-input" type="password" id="new-pass" placeholder="New password (min. 6 chars)"/>
+          <input class="set-input" type="password" id="con-pass" placeholder="Confirm new password"/>
+          <button class="set-btn" onclick="changePassword()">Update Password</button>
+          <div class="set-msg" id="password-msg"></div>
+        </div>
+
+        <!-- ABOUT -->
+        <div class="set-panel" id="panel-about">
+          <div class="about-logo">🚀</div>
+          <h3 style="font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-size:1.1rem;">SKILLX — CAREER GUARDIAN</h3>
+          <div class="about-version">v2.0.0 — Build 2026</div>
+          <p>An AI-powered career intelligence platform that predicts skill relevance and suggests smart transition paths to future-proof your career.</p>
+          <div class="about-divider"></div>
+          <ul class="about-list">
+            <li><span>⚡</span><span>Real-time skill velocity gap analysis</span></li>
+            <li><span>🧠</span><span>AI-generated career transition recommendations</span></li>
+            <li><span>📋</span><span>Curated roadmaps for 10+ career paths</span></li>
+            <li><span>🌐</span><span>Future market demand forecasting to 2026</span></li>
+          </ul>
+          <div class="about-divider"></div>
+          <p style="font-size:0.74rem;margin-bottom:0;">Built by <strong style="color:var(--teal);">Team Neural Ninjas</strong> · Powered by Claude AI</p>
+        </div>
+
+        <!-- DELETE -->
+        <div class="set-panel" id="panel-delete">
+          <h3 style="color:var(--danger);">Delete Account</h3>
+          <div class="delete-warning">⚠️ <strong>This action is permanent and cannot be undone.</strong> All your data, skills, and history will be erased immediately upon deletion.</div>
+          <p>To confirm, type your email address below and click Delete Account.</p>
+          <input class="set-input" type="email" id="del-confirm-email" placeholder="Type your email to confirm"/>
+          <button class="set-btn danger-btn" onclick="deleteAccount()">🗑 Delete My Account</button>
+          <div class="set-msg" id="delete-msg"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HELP TOOLTIP ═══════════ -->
+<div class="help-tooltip" id="help-tooltip">
+  <div class="help-title">❓ How to use <span class="help-close" onclick="closeHelp()">✕</span></div>
+  <div class="help-item"><span class="hi">1️⃣</span><span>Type a skill (e.g. <em>Java, Python</em>) and press <strong>Add Skill</strong> or hit Enter.</span></div>
+  <div class="help-item"><span class="hi">2️⃣</span><span>Click <strong>Generate Score</strong> to get your AI-powered skill relevance score.</span></div>
+  <div class="help-item"><span class="hi">3️⃣</span><span>View your <strong>Velocity Gap</strong> chart — it shows your growth vs market demand.</span></div>
+  <div class="help-item"><span class="hi">4️⃣</span><span>Explore <strong>Learning Path</strong> in the nav for step-by-step career roadmaps.</span></div>
+</div>
+
+<script>
+/* ════════ STARS ════════ */
+(function(){
+  const c=document.getElementById('stars-canvas'),ctx=c.getContext('2d');
+  let stars=[];
+  function resize(){
+    c.width=window.innerWidth;c.height=window.innerHeight;
+    stars=Array.from({length:180},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2,o:Math.random()*0.7+0.1,speed:Math.random()*0.3+0.05}));
+  }
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(180,220,255,${s.o})`;ctx.fill();s.o+=s.speed*0.015;if(s.o>0.8||s.o<0.1)s.speed*=-1;});
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+/* ════════ PERSISTENT USER STORAGE ════════ */
+const STORAGE_KEY = 'skillx_users';
+const SESSION_KEY = 'skillx_session';
+
+// Load users from localStorage or use defaults
+function loadUsers(){
+  try{
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if(stored){
+      const parsed = JSON.parse(stored);
+      if(Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  }catch(e){}
+  // Default demo user
+  const defaults = [{email:'user@guardian.com', password:'guardian123', name:'Alex Carter'}];
+  saveUsers(defaults);
+  return defaults;
+}
+
+function saveUsers(users){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); }catch(e){}
+}
+
+function saveSession(user){
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify({email:user.email, timestamp:Date.now()})); }catch(e){}
+}
+
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+
+function loadSession(){
+  try{
+    const s = localStorage.getItem(SESSION_KEY);
+    if(s){
+      const sess = JSON.parse(s);
+      // Session valid for 30 days
+      if(Date.now() - sess.timestamp < 30 * 24 * 60 * 60 * 1000){
+        return sess.email;
+      }
+      clearSession();
+    }
+  }catch(e){}
+  return null;
+}
+
+let USERS = loadUsers();
+let currentUser = null;
+
+/* ════════ AUTO-LOGIN ON PAGE LOAD ════════ */
+window.addEventListener('load', function(){
+  const savedEmail = loadSession();
+  if(savedEmail){
+    USERS = loadUsers(); // refresh
+    const user = USERS.find(u => u.email === savedEmail);
+    if(user){
+      goToDashboard(user, true); // silent = skip overlay delay
+      return;
+    }
+  }
+  // No session, show login
+  showPage('login-page');
+});
+
+/* ════════ PAGE NAV ════════ */
+const ALL_PAGES=['login-page','register-page','dashboard-page','learning-page'];
+function showPage(id){
+  ALL_PAGES.forEach(pid=>document.getElementById(pid).classList[pid===id?'remove':'add']('hidden'));
+}
+function showLearnPage(){
+  buildLearnGrid();
+  document.getElementById('user-menu').classList.remove('open');
+  showPage('learning-page');
+  syncLearnNav();
+}
+function showDashPage(){
+  document.getElementById('user-menu2').classList.remove('open');
+  showPage('dashboard-page');
+}
+
+function goToDashboard(user, silent=false){
+  currentUser=user;
+  const initials=user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  ['avatar-circle','avatar-circle2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=initials;});
+  ['menu-username','menu-username2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=user.name;});
+  ['menu-email','menu-email2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=user.email;});
+
+  if(silent){
+    showPage('dashboard-page');
+    return;
+  }
+  const ov=document.getElementById('page-overlay');
+  document.getElementById('overlay-text').textContent='Launching Dashboard...';
+  ov.classList.add('show');
+  setTimeout(()=>{showPage('dashboard-page');setTimeout(()=>ov.classList.remove('show'),400);},900);
+}
+
+function syncLearnNav(){
+  const initials=currentUser?currentUser.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2):'U';
+  document.getElementById('avatar-circle2').textContent=initials;
+  if(currentUser){document.getElementById('menu-username2').textContent=currentUser.name;document.getElementById('menu-email2').textContent=currentUser.email;}
+}
+
+/* ════════ PASSWORD TOGGLE ════════ */
+function mkToggle(tid,iid){
+  document.getElementById(tid).addEventListener('click',function(){const inp=document.getElementById(iid);inp.type=inp.type==='password'?'text':'password';this.textContent=inp.type==='password'?'👁':'🙈';});
+}
+mkToggle('toggle-lp','login-pass');mkToggle('toggle-rp','reg-pass');
+
+/* ════════ KEYBOARD NAV ════════ */
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin();});
+document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')handleRegister();});
+
+/* ════════ LOGIN ════════ */
+function handleLogin(){
+  const email=document.getElementById('login-email').value.trim().toLowerCase();
+  const pass=document.getElementById('login-pass').value;
+  const btn=document.getElementById('btn-login');
+  const err=document.getElementById('login-error');
+  const rememberMe=document.getElementById('remember-me').checked;
+  err.classList.remove('show');
+  if(!email||!pass){err.textContent='⚠ Please fill in all fields.';err.classList.add('show');return;}
+  btn.classList.add('loading');btn.disabled=true;btn.textContent='Signing in...';
+  setTimeout(()=>{
+    USERS = loadUsers(); // always read fresh from storage
+    const user=USERS.find(u=>u.email===email&&u.password===pass);
+    if(user){
+      if(rememberMe) saveSession(user);
+      else clearSession();
+      goToDashboard(user);
+    }
+    else{
+      btn.classList.remove('loading');btn.disabled=false;btn.textContent='Sign In →';
+      err.innerHTML='⚠ Invalid credentials. Try <strong>user@guardian.com</strong> / <strong>guardian123</strong>';err.classList.add('show');
+      document.getElementById('login-pass').value='';
+    }
+  },900);
+}
+
+/* ════════ REGISTER ════════ */
+function checkStrength(val){
+  const fill=document.getElementById('strength-fill'),label=document.getElementById('strength-label');
+  let s=0;if(val.length>=6)s++;if(val.length>=10)s++;if(/[A-Z]/.test(val))s++;if(/[0-9]/.test(val))s++;if(/[^A-Za-z0-9]/.test(val))s++;
+  const pct=[0,20,40,65,85,100][Math.min(s,5)];
+  const colors=['','#f05050','#f0a030','#d4c830','#60c850','#00c8dc'];
+  const labels=['','Weak','Fair','Good','Strong','Excellent'];
+  fill.style.width=pct+'%';fill.style.background=colors[s]||'';
+  label.textContent=s>0?labels[s]:'';label.style.color=colors[s];
+}
+function handleRegister(){
+  const fname=document.getElementById('reg-fname').value.trim();
+  const lname=document.getElementById('reg-lname').value.trim();
+  const email=document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const btn=document.getElementById('btn-register');
+  const err=document.getElementById('reg-error');
+  const suc=document.getElementById('reg-success');
+  err.classList.remove('show');suc.classList.remove('show');
+  if(!fname||!lname){err.textContent='⚠ Please enter your full name.';err.classList.add('show');return;}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent='⚠ Please enter a valid email.';err.classList.add('show');return;}
+  if(pass.length<6){err.textContent='⚠ Password must be at least 6 characters.';err.classList.add('show');return;}
+  if(pass!==pass2){err.textContent='⚠ Passwords do not match.';err.classList.add('show');return;}
+  USERS = loadUsers();
+  if(USERS.find(u=>u.email===email)){err.textContent='⚠ Account already exists.';err.classList.add('show');return;}
+  btn.classList.add('loading');btn.disabled=true;btn.textContent='Creating Account...';
+  setTimeout(()=>{
+    const newUser={email,password:pass,name:`${fname} ${lname}`};
+    USERS.push(newUser);
+    saveUsers(USERS); // persist to localStorage
+    saveSession(newUser); // auto-login new user
+    suc.textContent='✓ Account created! Redirecting...';suc.classList.add('show');
+    setTimeout(()=>goToDashboard(newUser),1100);
+  },900);
+}
+
+/* ════════ LOGOUT ════════ */
+function handleLogout(){
+  clearSession();
+  ['user-menu','user-menu2'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  closeSettings();closeHelp();
+  const ov=document.getElementById('page-overlay');
+  document.getElementById('overlay-text').textContent='Signing out...';
+  ov.classList.add('show');
+  setTimeout(()=>{
+    currentUser=null;skills.length=0;renderTags();
+    document.getElementById('score-badge').classList.remove('visible');
+    document.getElementById('status-msg').textContent='';
+    document.getElementById('chart-placeholder').style.display='';
+    document.getElementById('velocity-chart').style.display='none';
+    if(chartInstance){chartInstance.destroy();chartInstance=null;}
+    document.getElementById('readiness-fill').style.width='0%';
+    document.getElementById('transitions-grid').innerHTML=defaultCards();
+    document.getElementById('login-email').value='';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass').type='password';
+    document.getElementById('toggle-lp').textContent='👁';
+    document.getElementById('login-error').classList.remove('show');
+    document.getElementById('btn-login').textContent='Sign In →';
+    document.getElementById('btn-login').disabled=false;
+    document.getElementById('btn-login').classList.remove('loading');
+    showPage('login-page');
+    setTimeout(()=>ov.classList.remove('show'),400);
+  },700);
+}
+
+/* ════════ USER MENUS ════════ */
+function toggleUserMenu(){document.getElementById('user-menu').classList.toggle('open');}
+function toggleUserMenu2(){document.getElementById('user-menu2').classList.toggle('open');}
+document.addEventListener('click',e=>{
+  const av=document.getElementById('user-avatar');
+  const av2=document.getElementById('user-avatar2');
+  if(av&&!av.contains(e.target))document.getElementById('user-menu').classList.remove('open');
+  if(av2&&!av2.contains(e.target))document.getElementById('user-menu2').classList.remove('open');
+});
+
+/* ════════ SETTINGS MODAL ════════ */
+function openSettings(tab='appearance'){
+  document.getElementById('user-menu').classList.remove('open');
+  document.getElementById('user-menu2').classList.remove('open');
+  switchTab(tab);
+  if(currentUser)document.getElementById('new-username').value=currentUser.name;
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings(){document.getElementById('settings-modal').classList.remove('open');}
+function closeSettingsOutside(e){if(e.target===document.getElementById('settings-modal'))closeSettings();}
+
+function switchTab(name){
+  document.querySelectorAll('.set-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.set-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  ['username-msg','password-msg','delete-msg'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='';el.className='set-msg';}});
+  document.getElementById('cur-pass').value='';
+  document.getElementById('new-pass').value='';
+  document.getElementById('con-pass').value='';
+  document.getElementById('del-confirm-email').value='';
+}
+
+/* ── Theme ── */
+let isDark=true;
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.classList.toggle('light',!isDark);
+  const btn=document.getElementById('theme-toggle-btn');
+  const label=document.getElementById('theme-label');
+  btn.classList.toggle('on',!isDark);
+  label.textContent=isDark?'🌙 Dark Mode':'☀️ Light Mode';
+  if(chartInstance){
+    const col=isDark?'#6a8aaa':'#4a6a8a';
+    chartInstance.options.scales.x.ticks.color=col;
+    chartInstance.options.scales.y.ticks.color=col;
+    chartInstance.options.plugins.legend.labels.color=col;
+    chartInstance.update();
+  }
+}
+
+/* ── Change Username ── */
+function changeUsername(){
+  const val=document.getElementById('new-username').value.trim();
+  const msg=document.getElementById('username-msg');
+  if(!val){msg.textContent='⚠ Name cannot be empty.';msg.className='set-msg err';return;}
+  if(val.length<2){msg.textContent='⚠ Name must be at least 2 characters.';msg.className='set-msg err';return;}
+  currentUser.name=val;
+  // Persist name change
+  USERS = loadUsers();
+  const u=USERS.find(u=>u.email===currentUser.email);if(u)u.name=val;
+  saveUsers(USERS);
+  const initials=val.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  ['avatar-circle','avatar-circle2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=initials;});
+  ['menu-username','menu-username2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  msg.textContent='✓ Display name updated successfully!';msg.className='set-msg ok';
+}
+
+/* ── Change Password ── */
+function changePassword(){
+  const cur=document.getElementById('cur-pass').value;
+  const np=document.getElementById('new-pass').value;
+  const cp=document.getElementById('con-pass').value;
+  const msg=document.getElementById('password-msg');
+  if(!cur||!np||!cp){msg.textContent='⚠ Please fill all fields.';msg.className='set-msg err';return;}
+  if(cur!==currentUser.password){msg.textContent='⚠ Current password is incorrect.';msg.className='set-msg err';return;}
+  if(np.length<6){msg.textContent='⚠ New password must be at least 6 characters.';msg.className='set-msg err';return;}
+  if(np!==cp){msg.textContent='⚠ New passwords do not match.';msg.className='set-msg err';return;}
+  currentUser.password=np;
+  USERS = loadUsers();
+  const u=USERS.find(u=>u.email===currentUser.email);if(u)u.password=np;
+  saveUsers(USERS);
+  document.getElementById('cur-pass').value='';document.getElementById('new-pass').value='';document.getElementById('con-pass').value='';
+  msg.textContent='✓ Password updated successfully!';msg.className='set-msg ok';
+}
+
+/* ── Delete Account ── */
+function deleteAccount(){
+  const email=document.getElementById('del-confirm-email').value.trim().toLowerCase();
+  const msg=document.getElementById('delete-msg');
+  if(!email){msg.textContent='⚠ Please enter your email.';msg.className='set-msg err';return;}
+  if(email!==currentUser.email){msg.textContent='⚠ Email does not match your account.';msg.className='set-msg err';return;}
+  USERS = loadUsers();
+  const idx=USERS.findIndex(u=>u.email===currentUser.email);
+  if(idx>-1)USERS.splice(idx,1);
+  saveUsers(USERS);
+  clearSession();
+  msg.textContent='Account deleted. Signing out...';msg.className='set-msg ok';
+  setTimeout(()=>{closeSettings();handleLogout();},1200);
+}
+
+/* ════════ HELP TOOLTIP ════════ */
+function toggleHelp(e){
+  e.stopPropagation();
+  document.getElementById('user-menu').classList.remove('open');
+  const tt=document.getElementById('help-tooltip');
+  tt.classList.toggle('open');
+}
+function closeHelp(){document.getElementById('help-tooltip').classList.remove('open');}
+document.addEventListener('click',e=>{
+  const tt=document.getElementById('help-tooltip');
+  const hb=document.getElementById('help-btn');
+  if(tt&&!tt.contains(e.target)&&(!hb||!hb.contains(e.target)))tt.classList.remove('open');
+});
+
+/* ════════ SKILLS ════════ */
+const skills=[];
+function normalizeSkill(s){return s.trim().toLowerCase();}
+function displaySkill(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function addSkill(){
+  const inp=document.getElementById('skill-input');
+  const raw=inp.value.trim();if(!raw)return;
+  const norm=normalizeSkill(raw);
+  if(!skills.find(s=>normalizeSkill(s)===norm)){
+    skills.push(raw);renderTags();
+  }
+  inp.value='';inp.focus();
+}
+document.getElementById('skill-input').addEventListener('keydown',e=>{if(e.key==='Enter')addSkill();});
+function removeSkill(idx){skills.splice(idx,1);renderTags();}
+function renderTags(){
+  document.getElementById('tags-row').innerHTML=skills.map((s,i)=>
+    `<div class="tag">${displaySkill(s)} <span class="remove" onclick="removeSkill(${i})">✕</span></div>`
+  ).join('');
+}
+
+/* ════════ GENERATE SCORE ════════ */
+let chartInstance=null;
+async function generateScore(){
+  if(!skills.length){setStatus('⚠ Please add at least one skill first.','#f0a030');return;}
+  const btn=document.getElementById('gen-btn');
+  btn.classList.add('loading');btn.disabled=true;
+  setStatus('Analyzing your skills with AI...','var(--teal)');
+  document.getElementById('score-badge').classList.remove('visible');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        messages:[{role:'user',content:`You are a career intelligence AI. Given these skills: ${skills.join(', ')}.
+Return ONLY a valid JSON object (no markdown, no explanation) with this structure:
+{
+  "score": <0-100 relevance to future job market>,
+  "readiness": <0-100 future readiness>,
+  "velocityData": {
+    "labels": ["2023","2024","2025","2026"],
+    "userGrowth": [<4 numbers, start 20-40, grow moderately>],
+    "marketDemand": [<4 numbers, start 30-60, grow faster>]
+  },
+  "insight": "<one sentence insight>"
+}`}]
+      })
+    });
+    const data=await res.json();
+    const raw=data.content.map(b=>b.text||'').join('');
+    const result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('score-val').textContent=result.score;
+    document.getElementById('score-badge').classList.add('visible');
+    setTimeout(()=>{document.getElementById('readiness-fill').style.width=result.readiness+'%';},100);
+    setStatus('✓ '+result.insight,'var(--teal)');
+    drawChart(result.velocityData);
+    updateTransitions(skills);
+  }catch(err){
+    setStatus('⚠ Error: '+err.message,'#f05050');
+  }finally{btn.classList.remove('loading');btn.disabled=false;}
+}
+
+function drawChart(vd){
+  document.getElementById('chart-placeholder').style.display='none';
+  const canvas=document.getElementById('velocity-chart');canvas.style.display='block';
+  if(chartInstance)chartInstance.destroy();
+  const tickCol=isDark?'#6a8aaa':'#4a6a8a';
+  chartInstance=new Chart(canvas,{
+    type:'line',
+    data:{labels:vd.labels,datasets:[
+      {label:'Your Skill Growth',data:vd.userGrowth,borderColor:'#00c8dc',backgroundColor:'rgba(0,200,220,0.08)',borderWidth:2.5,pointBackgroundColor:'#00c8dc',pointRadius:4,tension:0.4,fill:true},
+      {label:'Market Demand',data:vd.marketDemand,borderColor:'#f0a030',backgroundColor:'rgba(240,160,48,0.06)',borderWidth:2.5,pointBackgroundColor:'#f0a030',pointRadius:4,tension:0.4,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:tickCol,font:{family:'Exo 2',size:11}}},tooltip:{mode:'index',intersect:false}},
+      scales:{
+        x:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{color:tickCol,font:{family:'Exo 2',size:11}}},
+        y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{color:tickCol,font:{family:'Exo 2',size:11}},beginAtZero:true,max:100}
+      },animation:{duration:1000,easing:'easeInOutQuart'}}
+  });
+}
+
+/* ════════ TRANSITIONS ════════ */
+const tMap={
+  java:{icon:'☁️',title:'Cloud Architect',sub:'For Java Developers',tags:['DevOps','AWS','Docker']},
+  sql:{icon:'🧠',title:'AI Specialist',sub:'For SQL Enthusiasts',tags:['Deep Learning','NLP','TensorFlow']},
+  python:{icon:'📊',title:'Data Scientist',sub:'For Python Devs',tags:['Pandas','Scikit-learn','Spark']},
+  javascript:{icon:'🌐',title:'Full-Stack Engineer',sub:'For JS Developers',tags:['React','Node.js','GraphQL']},
+  react:{icon:'⚛️',title:'Frontend Architect',sub:'For React Devs',tags:['Next.js','TypeScript','Figma']},
+  d1:{icon:'🔒',title:'Cybersecurity Analyst',sub:'High demand role',tags:['SIEM','Zero Trust','SOC']},
+  d2:{icon:'⚙️',title:'DevOps Engineer',sub:'Growing market need',tags:['Kubernetes','CI/CD','Terraform']}
+};
+function cardHtml(t){return`<div class="trans-card"><div class="trans-header"><span class="trans-icon">${t.icon}</span><span class="trans-title">${t.title}</span></div><div class="trans-sub">${t.sub}</div><div class="skill-tags">${t.tags.map(g=>`<span class="skill-tag">${g}</span>`).join('')}</div><button class="btn-path">View Path</button></div>`;}
+function defaultCards(){return cardHtml(tMap.d1)+cardHtml(tMap.d2);}
+function updateTransitions(skills){
+  const found=skills.map(s=>tMap[normalizeSkill(s)]).filter(Boolean);
+  while(found.length<2)found.push(tMap.d1,tMap.d2);
+  document.getElementById('transitions-grid').innerHTML=found.slice(0,2).map(cardHtml).join('');
+}
+function setStatus(msg,col){const el=document.getElementById('status-msg');el.textContent=msg;el.style.color=col;}
+function viewAnalysis(){
+  if(!chartInstance){setStatus('⚠ Generate a score first.','#f0a030');return;}
+  alert('Full analysis for '+currentUser.name+' — connect your backend for multi-year projections.');
+}
+
+/* ════════ LEARNING PATH ════════ */
+const ROADMAPS=[
+  {icon:'☁️',title:'Cloud Architect',level:'Intermediate → Expert',tags:['AWS','Azure','DevOps'],desc:'Design and manage scalable cloud infrastructure. High demand across all industries.',
+   steps:[
+    {title:'Linux & Networking Fundamentals',desc:'Learn OS concepts, TCP/IP, DNS, firewalls, and basic CLI scripting.',dur:'4–6 weeks'},
+    {title:'Cloud Provider Basics (AWS/Azure)',desc:'IAM, EC2/VMs, S3/Blob storage, VPCs, and billing models.',dur:'6–8 weeks'},
+    {title:'Infrastructure as Code',desc:'Terraform, CloudFormation — provision infra programmatically.',dur:'4 weeks'},
+    {title:'Containers & Kubernetes',desc:'Docker fundamentals, Kubernetes orchestration, Helm charts.',dur:'6 weeks'},
+    {title:'CI/CD Pipelines',desc:'GitHub Actions, Jenkins, or GitLab CI for automated deployments.',dur:'3 weeks'},
+    {title:'Cloud Security & Compliance',desc:'Zero-trust, IAM policies, secrets management, audit logging.',dur:'4 weeks'},
+    {title:'Cloud Architect Certification',desc:'AWS Solutions Architect or Azure Solutions Expert exam prep.',dur:'8 weeks'},
+  ]},
+  {icon:'🧠',title:'AI / ML Specialist',level:'Beginner → Advanced',tags:['Python','TensorFlow','NLP'],desc:'Build intelligent systems using machine learning and deep learning techniques.',
+   steps:[
+    {title:'Python & Math Foundations',desc:'NumPy, Pandas, linear algebra, statistics, probability.',dur:'4 weeks'},
+    {title:'Machine Learning Basics',desc:'Supervised/unsupervised learning, scikit-learn, model evaluation.',dur:'6 weeks'},
+    {title:'Deep Learning',desc:'Neural networks, CNNs, RNNs using TensorFlow or PyTorch.',dur:'8 weeks'},
+    {title:'NLP & Large Language Models',desc:'Transformers, BERT, GPT fine-tuning, Hugging Face ecosystem.',dur:'6 weeks'},
+    {title:'MLOps & Model Deployment',desc:'Docker, FastAPI, model versioning, monitoring in production.',dur:'4 weeks'},
+    {title:'Capstone Project',desc:'Build an end-to-end AI pipeline — data to deployed API.',dur:'6 weeks'},
+  ]},
+  {icon:'📊',title:'Data Scientist',level:'Beginner → Intermediate',tags:['Python','SQL','Spark'],desc:'Extract insights from data using statistical analysis and visualization.',
+   steps:[
+    {title:'SQL Mastery',desc:'Complex joins, window functions, CTEs, query optimization.',dur:'3 weeks'},
+    {title:'Python for Data Analysis',desc:'Pandas, Matplotlib, Seaborn — EDA and data wrangling.',dur:'4 weeks'},
+    {title:'Statistics & Probability',desc:'Hypothesis testing, A/B testing, Bayesian reasoning.',dur:'3 weeks'},
+    {title:'Machine Learning Fundamentals',desc:'Regression, classification, clustering with scikit-learn.',dur:'5 weeks'},
+    {title:'Big Data Tools',desc:'Apache Spark, Databricks, Hive for large-scale processing.',dur:'4 weeks'},
+    {title:'Storytelling & Dashboards',desc:'Tableau, Power BI, or Plotly Dash for business reporting.',dur:'3 weeks'},
+  ]},
+  {icon:'🌐',title:'Full-Stack Engineer',level:'Beginner → Intermediate',tags:['React','Node.js','GraphQL'],desc:'Build complete web applications from user interface to server and database.',
+   steps:[
+    {title:'HTML, CSS & JavaScript',desc:'Semantic HTML, Flexbox/Grid, ES6+, DOM manipulation.',dur:'4 weeks'},
+    {title:'React & State Management',desc:'Hooks, Context, Redux Toolkit, component architecture.',dur:'6 weeks'},
+    {title:'Node.js & REST APIs',desc:'Express.js, middleware, JWT auth, REST best practices.',dur:'4 weeks'},
+    {title:'Databases',desc:'PostgreSQL and MongoDB — schema design, ORM, indexing.',dur:'4 weeks'},
+    {title:'GraphQL',desc:'Schema definition, resolvers, Apollo Client and Server.',dur:'3 weeks'},
+    {title:'Deployment & DevOps Basics',desc:'Git, Docker, Vercel/Railway, environment management.',dur:'3 weeks'},
+  ]},
+  {icon:'🔒',title:'Cybersecurity Analyst',level:'Beginner → Advanced',tags:['SIEM','Pen Testing','SOC'],desc:'Protect organizations from digital threats using defensive and offensive techniques.',
+   steps:[
+    {title:'Networking & OS Fundamentals',desc:'OSI model, packet analysis, Windows & Linux administration.',dur:'4 weeks'},
+    {title:'Security Concepts',desc:'CIA triad, cryptography, authentication, access controls.',dur:'3 weeks'},
+    {title:'Threat Detection with SIEM',desc:'Splunk or Microsoft Sentinel — log analysis, alert tuning.',dur:'5 weeks'},
+    {title:'Penetration Testing Basics',desc:'Kali Linux, Metasploit, vulnerability scanning, OWASP Top 10.',dur:'6 weeks'},
+    {title:'Incident Response',desc:'IR playbooks, forensics, chain of custody, reporting.',dur:'4 weeks'},
+    {title:'Certifications',desc:'CompTIA Security+, then CEH or OSCP for advanced roles.',dur:'10 weeks'},
+  ]},
+  {icon:'⚙️',title:'DevOps Engineer',level:'Intermediate → Expert',tags:['Kubernetes','CI/CD','Terraform'],desc:'Bridge development and operations to deliver software faster and more reliably.',
+   steps:[
+    {title:'Linux & Shell Scripting',desc:'Bash, cron, process management, file systems, permissions.',dur:'3 weeks'},
+    {title:'Version Control & Git',desc:'Branching strategies, PRs, GitFlow, monorepos.',dur:'2 weeks'},
+    {title:'CI/CD Pipelines',desc:'GitHub Actions, Jenkins, ArgoCD — build/test/deploy automation.',dur:'5 weeks'},
+    {title:'Containers with Docker',desc:'Dockerfile, Compose, image optimization, registries.',dur:'3 weeks'},
+    {title:'Kubernetes',desc:'Pods, deployments, services, ingress, Helm, cluster management.',dur:'6 weeks'},
+    {title:'Monitoring & Observability',desc:'Prometheus, Grafana, ELK stack, distributed tracing.',dur:'4 weeks'},
+    {title:'Infrastructure as Code',desc:'Terraform, Ansible, Pulumi — GitOps workflows.',dur:'5 weeks'},
+  ]},
+  {icon:'⚛️',title:'Frontend Architect',level:'Intermediate → Expert',tags:['React','TypeScript','Figma'],desc:'Lead frontend engineering — design systems, performance, and scalable architecture.',
+   steps:[
+    {title:'TypeScript Mastery',desc:'Types, generics, utility types, strict mode best practices.',dur:'3 weeks'},
+    {title:'Advanced React Patterns',desc:'Compound components, render props, custom hooks, portals.',dur:'4 weeks'},
+    {title:'Performance Optimization',desc:'Code splitting, lazy loading, memoization, Core Web Vitals.',dur:'3 weeks'},
+    {title:'Design Systems',desc:'Figma collaboration, Storybook, accessible component libraries.',dur:'4 weeks'},
+    {title:'State Management at Scale',desc:'Zustand, Jotai, TanStack Query, server state patterns.',dur:'3 weeks'},
+    {title:'Testing',desc:'Jest, React Testing Library, Playwright E2E, visual regression.',dur:'4 weeks'},
+  ]},
+];
+
+let expandedCards=new Set();
+function buildLearnGrid(){
+  const grid=document.getElementById('learn-grid');
+  grid.innerHTML=ROADMAPS.map((rm,i)=>`
+    <div class="roadmap-card${expandedCards.has(i)?' expanded':''}" id="rm-${i}">
+      <div class="rm-header">
+        <div class="rm-icon">${rm.icon}</div>
+        <div><div class="rm-title">${rm.title}</div><div class="rm-sub">${rm.level}</div></div>
+      </div>
+      <div class="rm-tags">${rm.tags.map(t=>`<span class="rm-tag">${t}</span>`).join('')}</div>
+      <div class="rm-desc">${rm.desc}</div>
+      <div class="rm-steps">
+        ${rm.steps.map((st,si)=>`<div class="rm-step">
+          <div class="step-num">${si+1}</div>
+          <div class="step-content">
+            <div class="step-title">${st.title}</div>
+            <div class="step-desc">${st.desc}</div>
+            <div class="step-dur">⏱ ${st.dur}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="rm-toggle" onclick="toggleRoadmap(${i})">
+        ${expandedCards.has(i)?'▲ Collapse':'▼ View Roadmap'}
+      </div>
+    </div>
+  `).join('');
+}
+function toggleRoadmap(i){
+  if(expandedCards.has(i))expandedCards.delete(i);else expandedCards.add(i);
+  buildLearnGrid();
+}
+</script>
+</body>
+</html>
