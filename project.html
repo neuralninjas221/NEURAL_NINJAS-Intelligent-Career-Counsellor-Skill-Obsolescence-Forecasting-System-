@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Guardian</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Rajdhani:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050d1a;
+    --card: rgba(10, 25, 47, 0.85);
+    --border: rgba(0, 200, 220, 0.18);
+    --teal: #00c8dc;
+    --teal-dim: rgba(0, 200, 220, 0.15);
+    --text: #c8ddf0;
+    --text-dim: #6a8aaa;
+    --accent: #0d7a8a;
+  }
+
+  body {
+    font-family: 'Exo 2', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Star background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(0,180,220,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,80,140,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #stars-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    padding: 32px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 36px;
+  }
+
+  .brand h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+
+  .brand .team {
+    font-size: 0.85rem;
+    color: var(--teal);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .brand .tagline {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-top: 10px;
+    font-weight: 300;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 6px;
+    background: rgba(10, 30, 55, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 8px 16px;
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 6px 14px;
+    border-radius: 20px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-links a:hover, .nav-links a.active {
+    color: #fff;
+    background: rgba(0, 200, 220, 0.12);
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    padding: 24px;
+  }
+
+  /* SKILL INPUT */
+  .skill-input-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .search-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-wrap .icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 1rem;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: rgba(5, 15, 35, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px 12px 40px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-wrap input:focus {
+    border-color: var(--teal);
+  }
+
+  .search-wrap input::placeholder { color: var(--text-dim); }
+
+  .btn-add {
+    background: linear-gradient(135deg, var(--accent), #00c8dc55);
+    border: 1px solid var(--teal);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-add:hover { background: linear-gradient(135deg, #00aabb, #00c8dc88); }
+
+  .tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 36px;
+    margin-bottom: 20px;
+  }
+
+  .tag {
+    background: rgba(0, 200, 220, 0.1);
+    border: 1px solid rgba(0, 200, 220, 0.3);
+    border-radius: 6px;
+    color: var(--teal);
+    font-size: 0.82rem;
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tag .remove {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    font-size: 0.75rem;
+  }
+  .tag .remove:hover { opacity: 1; }
+
+  .btn-generate {
+    display: block;
+    width: 65%;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #0d7a8a, #00c8dc);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-generate:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+  .btn-generate.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    animation: shimmer 1s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* RECOMMENDED */
+  .section-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 24px 0 14px;
+  }
+
+  .transitions-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    padding: 22px;
+  }
+
+  .transitions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .trans-card {
+    background: rgba(5, 18, 40, 0.7);
+    border: 1px solid rgba(0, 180, 210, 0.2);
+    border-radius: 12px;
+    padding: 18px;
+    transition: border-color 0.2s;
+  }
+
+  .trans-card:hover { border-color: rgba(0, 200, 220, 0.5); }
+
+  .trans-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .trans-icon {
+    font-size: 1.4rem;
+  }
+
+  .trans-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--teal);
+  }
+
+  .trans-sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .skill-tag {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    padding: 3px 10px;
+  }
+
+  .btn-path {
+    background: rgba(0, 200, 220, 0.08);
+    border: 1px solid rgba(0, 200, 220, 0.3);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.85rem;
+    padding: 8px 20px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+  }
+
+  .btn-path:hover { background: rgba(0, 200, 220, 0.18); color: #fff; }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .velocity-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    padding: 22px;
+    flex: 1;
+  }
+
+  .velocity-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .velocity-title span {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+    margin-bottom: 16px;
+  }
+
+  .chart-placeholder {
+    height: 100%;
+    border: 1px dashed rgba(0,200,220,0.2);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  .chart-placeholder .icon-big { font-size: 2rem; opacity: 0.4; }
+
+  .btn-analysis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(5, 18, 40, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-analysis:hover { border-color: var(--teal); color: #fff; }
+
+  /* STATUS */
+  #status-msg {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--teal);
+    min-height: 20px;
+    margin-top: 10px;
+  }
+
+  /* SCORE BADGE */
+  .score-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: rgba(0, 200, 220, 0.06);
+    border: 1px solid rgba(0,200,220,0.2);
+    border-radius: 10px;
+    margin-top: 14px;
+  }
+
+  .score-badge.visible { display: flex; }
+
+  .score-num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--teal);
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .score-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .right-panel { order: -1; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<div class="wrapper">
+  <!-- NAV -->
+  <nav>
+    <div class="brand">
+      <h1>CAREER GUARDIAN</h1>
+      <div class="team">By Team Neural Ninjas</div>
+      <div class="tagline">Predict the future of your skills and get ahead with smart transition paths.</div>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="active">⚡ Dashboard</a>
+      <a href="#">📊 Insights</a>
+      <a href="#">📋 Learning Path</a>
+    </div>
+  </nav>
+
+  <div class="main-grid">
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <div class="card">
+        <div class="skill-input-row">
+          <div class="search-wrap">
+            <span class="icon">🔍</span>
+            <input type="text" id="skill-input" placeholder="Eg. Java, SQL, Manual Testing" />
+          </div>
+          <button class="btn-add" onclick="addSkill()">Add Skill +</button>
+        </div>
+
+        <div class="tags-row" id="tags-row">
+          <!-- tags injected here -->
+        </div>
+
+        <button class="btn-generate" id="gen-btn" onclick="generateScore()">Generate Score</button>
+        <div id="status-msg"></div>
+
+        <div class="score-badge" id="score-badge">
+          <div>
+            <div class="score-num" id="score-val">—</div>
+            <div class="score-label">Skill Relevance Score</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:0.78rem; color:var(--text-dim); margin-bottom:4px;">Future Readiness</div>
+            <div id="readiness-bar" style="height:8px; background:rgba(255,255,255,0.08); border-radius:4px;">
+              <div id="readiness-fill" style="height:100%; border-radius:4px; background:linear-gradient(90deg,#0d7a8a,#00c8dc); width:0%; transition:width 1s ease;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommended -->
+      <div class="section-title">Recommended Transitions</div>
+      <div class="transitions-card">
+        <div class="transitions-grid" id="transitions-grid">
+          <!-- Cards -->
+          <div class="trans-card">
+            <div class="trans-header">
+              <span class="trans-icon">☁️</span>
+              <span class="trans-title">Cloud Architect</span>
+            </div>
+            <div class="trans-sub">For Java Developers</div>
+            <div class="skill-tags">
+              <span class="skill-tag">DevOps</span>
+              <span class="skill-tag">AWS</span>
+              <span class="skill-tag">Docker</span>
+            </div>
+            <button class="btn-path">View Path</button>
+          </div>
+          <div class="trans-card">
+            <div class="trans-header">
+              <span class="trans-icon">🧠</span>
+              <span class="trans-title">AI Specialist</span>
+            </div>
+            <div class="trans-sub">For SQL Enthusiasts</div>
+            <div class="skill-tags">
+              <span class="skill-tag">Deep Learning</span>
+              <span class="skill-tag">NLP</span>
+              <span class="skill-tag">TensorFlow</span>
+            </div>
+            <button class="btn-path">View Path</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-panel">
+      <div class="velocity-card">
+        <div class="velocity-title">Velocity Gap <span>- Towards 2026</span></div>
+        <div class="chart-wrap">
+          <canvas id="velocity-chart" style="display:none;"></canvas>
+          <div class="chart-placeholder" id="chart-placeholder">
+            <div class="icon-big">📈</div>
+            <div>Generate a score to view your</div>
+            <div>Velocity Gap analysis</div>
+          </div>
+        </div>
+        <button class="btn-analysis" onclick="viewAnalysis()">View Full Analysis →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Stars ----
+(function() {
+  const canvas = document.getElementById('stars-canvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({length: 160}, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.2,
+      o: Math.random() * 0.7 + 0.1,
+      speed: Math.random() * 0.3 + 0.05
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(180,220,255,${s.o})`;
+      ctx.fill();
+      s.o += s.speed * 0.015;
+      if (s.o > 0.8 || s.o < 0.1) s.speed *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize(); draw();
+})();
+
+// ---- Skills ----
+const skills = [];
+
+function addSkill() {
+  const inp = document.getElementById('skill-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!skills.includes(val)) {
+    skills.push(val);
+    renderTags();
+  }
+  inp.value = '';
+  inp.focus();
+}
+
+document.getElementById('skill-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addSkill();
+});
+
+function removeSkill(skill) {
+  const i = skills.indexOf(skill);
+  if (i > -1) skills.splice(i, 1);
+  renderTags();
+}
+
+function renderTags() {
+  const row = document.getElementById('tags-row');
+  row.innerHTML = skills.map(s =>
+    `<div class="tag">${s} <span class="remove" onclick="removeSkill('${s}')">✕</span></div>`
+  ).join('');
+}
+
+// ---- Generate Score (calls Claude API) ----
+let chartInstance = null;
+
+async function generateScore() {
+  if (skills.length === 0) {
+    setStatus('⚠ Please add at least one skill first.', '#f0a030');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  setStatus('Analyzing your skills with AI...', 'var(--teal)');
+  document.getElementById('score-badge').classList.remove('visible');
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `You are a career intelligence AI. Given these skills: ${skills.join(', ')}.
+
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "score": <number 0-100, relevance to future job market>,
+  "readiness": <number 0-100, future readiness percentage>,
+  "velocityData": {
+    "labels": ["2023", "2024", "2025", "2026"],
+    "userGrowth": [<4 numbers representing user skill growth trajectory, start ~20-40>],
+    "marketDemand": [<4 numbers representing market demand, start ~30-60, grow faster>]
+  },
+  "insight": "<one sentence insight about these skills>"
+}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    // Score badge
+    document.getElementById('score-val').textContent = result.score;
+    document.getElementById('score-badge').classList.add('visible');
+    setTimeout(() => {
+      document.getElementById('readiness-fill').style.width = result.readiness + '%';
+    }, 100);
+
+    setStatus('✓ ' + result.insight, 'var(--teal)');
+
+    // Draw chart
+    drawChart(result.velocityData);
+
+    // Update recommended transitions based on skills
+    updateTransitions(skills);
+
+  } catch (err) {
+    setStatus('⚠ Error: ' + err.message, '#f05050');
+    console.error(err);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function drawChart(vd) {
+  document.getElementById('chart-placeholder').style.display = 'none';
+  const canvas = document.getElementById('velocity-chart');
+  canvas.style.display = 'block';
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: vd.labels,
+      datasets: [
+        {
+          label: 'Your Skill Growth',
+          data: vd.userGrowth,
+          borderColor: '#00c8dc',
+          backgroundColor: 'rgba(0,200,220,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#00c8dc',
+          pointRadius: 4,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Market Demand',
+          data: vd.marketDemand,
+          borderColor: '#f0a030',
+          backgroundColor: 'rgba(240,160,48,0.06)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#f0a030',
+          pointRadius: 4,
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#6a8aaa', font: { family: 'Exo 2', size: 11 } }
+        },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#6a8aaa', font: { family: 'Exo 2', size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#6a8aaa', font: { family: 'Exo 2', size: 11 } },
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      animation: { duration: 1000, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+const transitionMap = {
+  Java: { icon: '☁️', title: 'Cloud Architect', sub: 'For Java Developers', tags: ['DevOps', 'AWS', 'Docker'] },
+  SQL: { icon: '🧠', title: 'AI Specialist', sub: 'For SQL Enthusiasts', tags: ['Deep Learning', 'NLP', 'TensorFlow'] },
+  Python: { icon: '📊', title: 'Data Scientist', sub: 'For Python Devs', tags: ['Pandas', 'Scikit-learn', 'Spark'] },
+  JavaScript: { icon: '🌐', title: 'Full-Stack Engineer', sub: 'For JS Developers', tags: ['React', 'Node.js', 'GraphQL'] },
+  default1: { icon: '🔒', title: 'Cybersecurity Analyst', sub: 'High demand role', tags: ['SIEM', 'Zero Trust', 'SOC'] },
+  default2: { icon: '⚙️', title: 'DevOps Engineer', sub: 'Growing market need', tags: ['Kubernetes', 'CI/CD', 'Terraform'] }
+};
+
+function updateTransitions(skills) {
+  const found = skills.map(s => transitionMap[s]).filter(Boolean);
+  if (found.length < 2) {
+    found.push(transitionMap.default1, transitionMap.default2);
+  }
+  const two = found.slice(0, 2);
+  document.getElementById('transitions-grid').innerHTML = two.map(t => `
+    <div class="trans-card">
+      <div class="trans-header">
+        <span class="trans-icon">${t.icon}</span>
+        <span class="trans-title">${t.title}</span>
+      </div>
+      <div class="trans-sub">${t.sub}</div>
+      <div class="skill-tags">${t.tags.map(tag => `<span class="skill-tag">${tag}</span>`).join('')}</div>
+      <button class="btn-path">View Path</button>
+    </div>
+  `).join('');
+}
+
+function setStatus(msg, color) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+function viewAnalysis() {
+  if (!chartInstance) {
+    setStatus('⚠ Generate a score first to view analysis.', '#f0a030');
+    return;
+  }
+  alert('Full analysis feature — connect your backend to display detailed multi-year projections.');
+}
+</script>
+</body>
+</html>
